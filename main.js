@@ -18,7 +18,7 @@ const config = require('./config.json');
 // var url =  "https://www.japscan.co";
 let pages = 97;
 let manga = 'dragon-ball';
-let volume = 'volume-22';
+let volume = 'volume-23';
 
 
 // TODO specify variables with parameters to avoid collision and use ... args
@@ -50,7 +50,6 @@ function createPath(manga, volume) {
         devtools: config.debug,
     });
 
-
      /**
      * Takes a screenshot of a DOM element on the page, with optional padding.
      *
@@ -66,6 +65,7 @@ function createPath(manga, volume) {
         if (!selector)
             throw Error('Please provide a selector.');
 
+        // we get the bounding rectangle of the DOM element
         const rect = await page.evaluate(selector => {
             const element = document.querySelector(selector);
             if (!element)
@@ -77,6 +77,7 @@ function createPath(manga, volume) {
         if (!rect)
             throw Error(`Could not find element that matches selector: ${selector}.`);
 
+        // we screenshot this part
         return await page.screenshot({
             path,
             clip: {
@@ -88,41 +89,25 @@ function createPath(manga, volume) {
         });
     }
 
-    // async function createPage() {
 
-        const page = await browser.newPage();
-        // TODO useful in config?
-        page.setViewport(config.viewPort);
+    const page = await browser.newPage();
+    page.setViewport(config.viewPort);
 
-        page.setRequestInterception(true);
-        page.on('request', interceptedRequest => {
+    page.setRequestInterception(true);
+    page.on('request', interceptedRequest => {
 
-            var foundUrl = interceptedRequest.url();
-            if (foundUrl.indexOf('syndicate') !== -1) {
-                // we could reject the ads!
-                // console.log(foundUrl);
-                interceptedRequest.abort();
+        var foundUrl = interceptedRequest.url();
+        if (foundUrl.match(config.blacklist.join('|'))) {
+            // we reject the useless ads!
+            if (config.debug) {
+                console.log(`we reject ad: ${foundUrl}`)
             }
-            else {
-                // interceptedRequest.abort();
-                interceptedRequest.continue();
-            }
-        });
-
-        // page.on('response', interceptedRequest => {
-
-        //     var foundUrl = interceptedRequest.url();
-        //         console.log(foundUrl);
-        //     if (foundUrl.indexOf('c.japscan') !== -1) {
-        //         console.log(foundUrl);
-        //     }
-        //     // interceptedRequest.continue();
-        // });
-
-        // await page.setUserAgent('Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36');
-
-        // return page;
-    // }
+            interceptedRequest.abort();
+        }
+        else {
+            interceptedRequest.continue();
+        }
+    });
 
     for (var i = 1 ; i < pages + 1; i++) {
 
@@ -130,39 +115,31 @@ function createPath(manga, volume) {
         console.log(`Connecting to ${url}`);
         await page.goto(url, { waitUntil: 'networkidle2' });
 
-        // await screenshotDOMElement({
-        //     path: 'element' + i + '.png',
-        //     selector: '.justify-content-center > div > #image',
-        //     padding: 16
-        // }, page);
-
-
         // to have a good sort we add leading zeros
         pageNumber = (i + '').padStart(3, '0');
 
-        let fileToWrite = injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber);
-        await page.screenshot({
-            path: createPath(manga, volume) + '/' + fileToWrite,
-            clip: config.coords,
-        });
+        let fileToWrite = createPath(manga, volume) + '/' + injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber);
+
+        // snapshot mode, the basic one we have to get exact rectangle to screenshot
+        if (config.mode === 'snapshot') {
+            await page.screenshot({
+                path: fileToWrite,
+                clip: config.snapshot.coords,
+            });
+        }
+        // no working well as far as we need to click to have node selectable
+        else if (config.mode === 'dom') {
+            await page.waitForSelector(config.dom.selector)
+
+            await screenshotDOMElement({
+                path: fileToWrite,
+                selector: config.dom.selector,
+                padding: config.dom.padding
+            }, page)
+        }
 
         console.log(`File ${fileToWrite} written`);
-
     }
-    // await page.goto(url, { waitUntil: 'domcontentloaded' });
-    // await page.goto(url);
-    // await page.content();
-
-    // to make a big wait (beacause category is not existing)
-    // await page.waitForSelector('.category', { timeout: 100000 });
-
-    // const body = await page.evaluate(() => {
-    //   return document.querySelector('body').innerHTML;
-    // });
-
-    // await page.evaluate(() => { window.scrollBy(0, window.innerHeight); })
-    // await page.screenshot({path: 'db.png'});
-
 
     await browser.close();
 })();
