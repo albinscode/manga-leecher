@@ -50,7 +50,7 @@ function createPath(manga, volume) {
 (async () => {
 
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: !config.debug,
         devtools: config.debug,
     });
 
