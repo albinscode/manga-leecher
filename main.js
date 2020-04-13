@@ -5,41 +5,45 @@
 
 
 // const puppeteer = require('puppeteer');
-const puppeteer = require('puppeteer-extra');
+const puppeteer = require('puppeteer-extra')
 
 // add stealth plugin and use defaults (all evasion techniques)
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+puppeteer.use(StealthPlugin())
 
-const fs = require('fs');
-const config = require('./config.json');
+const fs = require('fs')
+const config = require('./config.json')
 
-// TODO put into command line
-// var url =  "https://www.japscan.co";
-let pages = 97;
-let manga = 'dragon-ball';
-let volume = 'volume-23';
+const { program } = require('commander')
+program.version('0.0.1')
 
 
-// TODO specify variables with parameters to avoid collision and use ... args
-// TODO or huse handlebars?
+program
+    .requiredOption('-m, --manga <a>', 'the manga name to download')
+    .requiredOption('-n, --number <a>', 'the manga volume number to download')
+program.parse(process.argv);
+
+let pages = 2
+let manga = program.manga
+let volume = program.number
+
 function injectVariables(pattern, manga, volume, pagePattern, pageNumber) {
-    pattern = pattern.replace('${manga}', manga);
-    pattern = pattern.replace('${volume}', volume);
-    pattern = pattern.replace('${pagePattern}', pagePattern);
-    pattern = pattern.replace('${pageNumber}', pageNumber);
-    return pattern;
+    pattern = pattern.replace('${manga}', manga)
+    pattern = pattern.replace('${volume}', volume)
+    pattern = pattern.replace('${pagePattern}', pagePattern)
+    pattern = pattern.replace('${pageNumber}', pageNumber)
+    return pattern
 }
 
 function createPath(manga, volume) {
     if (!fs.existsSync(manga)){
-        fs.mkdirSync(manga);
+        fs.mkdirSync(manga)
     }
-    const subDir = `${manga}/${volume}`;
+    const subDir = `${manga}/${volume}`
     if (!fs.existsSync(subDir)){
-        fs.mkdirSync(subDir);
+        fs.mkdirSync(subDir)
     }
-    return subDir;
+    return subDir
 }
 
 
@@ -58,24 +62,24 @@ function createPath(manga, volume) {
      * @see https://gist.github.com/malyw/b4e8284e42fdaeceab9a67a9b0263743
      */
     async function screenshotDOMElement(opts = {}, page) {
-        const padding = 'padding' in opts ? opts.padding : 0;
-        const path = 'path' in opts ? opts.path : null;
-        const selector = opts.selector;
+        const padding = 'padding' in opts ? opts.padding : 0
+        const path = 'path' in opts ? opts.path : null
+        const selector = opts.selector
 
         if (!selector)
-            throw Error('Please provide a selector.');
+            throw Error('Please provide a selector.')
 
         // we get the bounding rectangle of the DOM element
         const rect = await page.evaluate(selector => {
-            const element = document.querySelector(selector);
+            const element = document.querySelector(selector)
             if (!element)
-                return null;
-            const {x, y, width, height} = element.getBoundingClientRect();
-            return {left: x, top: y, width, height, id: element.id};
-        }, selector);
+                return null
+            const {x, y, width, height} = element.getBoundingClientRect()
+            return {left: x, top: y, width, height, id: element.id}
+        }, selector)
 
         if (!rect)
-            throw Error(`Could not find element that matches selector: ${selector}.`);
+            throw Error(`Could not find element that matches selector: ${selector}.`)
 
         // we screenshot this part
         return await page.screenshot({
@@ -86,39 +90,59 @@ function createPath(manga, volume) {
                 width: rect.width + padding * 2,
                 height: rect.height + padding * 2
             }
-        });
+        })
     }
 
 
-    const page = await browser.newPage();
-    page.setViewport(config.viewPort);
+    const page = await browser.newPage()
+    page.setViewport(config.viewPort)
 
-    page.setRequestInterception(true);
+    page.setRequestInterception(true)
     page.on('request', interceptedRequest => {
 
-        var foundUrl = interceptedRequest.url();
+        var foundUrl = interceptedRequest.url()
         if (foundUrl.match(config.blacklist.join('|'))) {
             // we reject the useless ads!
             if (config.debug) {
                 console.log(`we reject ad: ${foundUrl}`)
             }
-            interceptedRequest.abort();
+            interceptedRequest.abort()
         }
         else {
-            interceptedRequest.continue();
+            interceptedRequest.continue()
         }
-    });
+    })
 
     for (var i = 1 ; i < pages + 1; i++) {
 
-        var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i);
-        console.log(`Connecting to ${url}`);
-        await page.goto(url, { waitUntil: 'networkidle2' });
+        var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
+        console.log(`Connecting to ${url}`)
+        await page.goto(url, { waitUntil: 'networkidle2' })
+
+        // this is the first page, we have to compute the number of pages
+        // TODO we change the loop iteration in the loop, this is DIRTY!
+        if (i === 1) {
+            let foundNode = await page.$(config.maxPageSelector)
+            let nodeLength = await foundNode.evaluate(node => node.length)
+            let nodeValue = await foundNode.evaluate(node => node.innerText)
+
+            if (nodeLength === 0) {
+                throw Error('Cannot find number of pages!')
+            }
+            // we take the text if we have only one node
+            if (nodeLength === 1) {
+                pages = nodeValue
+            }
+            else {
+                pages = nodeLength
+            }
+            console.log(`There are ${pages} to fetch.`)
+        }
 
         // to have a good sort we add leading zeros
-        pageNumber = (i + '').padStart(3, '0');
+        pageNumber = (i + '').padStart(3, '0')
 
-        let fileToWrite = createPath(manga, volume) + '/' + injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber);
+        let fileToWrite = createPath(manga, volume) + '/' + injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber)
 
         // snapshot mode, the basic one we have to get exact rectangle to screenshot
         if (config.mode === 'snapshot') {
@@ -138,8 +162,8 @@ function createPath(manga, volume) {
             }, page)
         }
 
-        console.log(`File ${fileToWrite} written`);
+        console.log(`File ${fileToWrite} written`)
     }
 
-    await browser.close();
-})();
+    await browser.close()
+})()

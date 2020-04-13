@@ -10,6 +10,7 @@
         "passeura",
         "google"
     ],
+    "maxPageSelector": "#pages",
     "dom": {
         "selector": "cnv-vv",
         "padding": 0
