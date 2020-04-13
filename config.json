@@ -2,6 +2,7 @@
     "pagePattern": "${pageNumber}",
     "filePattern": "${manga}_${volume}_${pageNumber}.png",
     "urlPattern": "https://www.japscan.co/lecture-en-ligne/${manga}/${volume}/${pagePattern}.html",
+    "timeout": 30000,
     "mode": "dom",
     "blacklist": [
         "syndicate",

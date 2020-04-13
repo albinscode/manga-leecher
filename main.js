@@ -121,54 +121,61 @@ function createPath(manga, volume) {
 
     for (var i = startPage ; i < pages + 1; i++) {
 
-        var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
-        console.log(`Connecting to ${url}`)
-        await page.goto(url, { waitUntil: 'networkidle2' })
+        try {
+            var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
+            console.log(`Connecting to ${url}`)
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: config.timeout })
 
-        // this is the first page, we have to compute the number of pages
-        // TODO we change the loop iteration in the loop, this is DIRTY!
-        if (i === startPage) {
-            let foundNode = await page.$(config.maxPageSelector)
-            let nodeLength = await foundNode.evaluate(node => node.length)
-            let nodeValue = await foundNode.evaluate(node => node.innerText)
+            // this is the first page, we have to compute the number of pages
+            // TODO we change the loop iteration in the loop, this is DIRTY!
+            if (i === startPage) {
+                let foundNode = await page.$(config.maxPageSelector)
+                let nodeLength = await foundNode.evaluate(node => node.length)
+                let nodeValue = await foundNode.evaluate(node => node.innerText)
 
-            if (nodeLength === 0) {
-                throw Error('Cannot find number of pages!')
+                if (nodeLength === 0) {
+                    throw Error('Cannot find number of pages!')
+                }
+                // we take the text if we have only one node
+                if (nodeLength === 1) {
+                    pages = nodeValue
+                }
+                else {
+                    pages = nodeLength
+                }
+                console.log(`There are ${pages} to fetch.`)
             }
-            // we take the text if we have only one node
-            if (nodeLength === 1) {
-                pages = nodeValue
+
+            // to have a good sort we add leading zeros
+            pageNumber = (i + '').padStart(3, '0')
+
+            let fileToWrite = createPath(manga, volume) + '/' + injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber)
+
+            // snapshot mode, the basic one we have to get exact rectangle to screenshot
+            if (config.mode === 'snapshot') {
+                await page.screenshot({
+                    path: fileToWrite,
+                    clip: config.snapshot.coords,
+                });
             }
-            else {
-                pages = nodeLength
+            // no working well as far as we need to click to have node selectable
+            else if (config.mode === 'dom') {
+                await page.waitForSelector(config.dom.selector)
+
+                await screenshotDOMElement({
+                    path: fileToWrite,
+                    selector: config.dom.selector,
+                    padding: config.dom.padding
+                }, page)
             }
-            console.log(`There are ${pages} to fetch.`)
+            console.log(`File ${fileToWrite} written`)
+        }
+        catch (error) {
+            console.log(error)
+            console.log('Trying to resume from error')
+            i--;
         }
 
-        // to have a good sort we add leading zeros
-        pageNumber = (i + '').padStart(3, '0')
-
-        let fileToWrite = createPath(manga, volume) + '/' + injectVariables(config.filePattern, manga, volume, config.pagePattern, pageNumber)
-
-        // snapshot mode, the basic one we have to get exact rectangle to screenshot
-        if (config.mode === 'snapshot') {
-            await page.screenshot({
-                path: fileToWrite,
-                clip: config.snapshot.coords,
-            });
-        }
-        // no working well as far as we need to click to have node selectable
-        else if (config.mode === 'dom') {
-            await page.waitForSelector(config.dom.selector)
-
-            await screenshotDOMElement({
-                path: fileToWrite,
-                selector: config.dom.selector,
-                padding: config.dom.padding
-            }, page)
-        }
-
-        console.log(`File ${fileToWrite} written`)
     }
 
     await browser.close()
