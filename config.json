@@ -1,0 +1,17 @@
+{
+    "pagePattern": "${pageNumber}",
+    "filePattern": "${manga}_${volume}_${pageNumber}.png",
+    "urlPattern": "https://www.japscan.co/lecture-en-ligne/${manga}/${volume}/${pagePattern}.html",
+    "coords": {
+        "x": 200,
+        "y": 300,
+        "width": 1170,
+        "height": 920
+    },
+    "debug": false,
+    "viewPort": {
+        "width": 1600,
+        "height": 1200,
+        "deviceScaleFactor": 1
+    }
+}
