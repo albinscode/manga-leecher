@@ -33,7 +33,13 @@ yarn
 An example for JapScan (but not limited to):
 
 ~~~
-yarn start
+yarn start --manga dragon-bal --number volume-1
 ~~~
 
 If you want to adapt it to another manga scan provider, see `config.json`.
+
+If an error occurs and you want to resume at page 31, you can run:
+
+~~~
+yarn start --manga dragon-bal --number volume-1 --resume 31
+~~~
