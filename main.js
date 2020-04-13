@@ -21,9 +21,9 @@ program.version('0.0.1')
 program
     .requiredOption('-m, --manga <a>', 'the manga name to download')
     .requiredOption('-n, --number <a>', 'the manga volume number to download')
+    .option('-r, --resume <a>', 'the number of the page to resume')
 program.parse(process.argv);
 
-let pages = 2
 let manga = program.manga
 let volume = program.number
 
@@ -113,7 +113,13 @@ function createPath(manga, volume) {
         }
     })
 
-    for (var i = 1 ; i < pages + 1; i++) {
+    var startPage = 1
+    if (program.resume) {
+        startPage = program.resume
+    }
+    pages = startPage + 1;
+
+    for (var i = startPage ; i < pages + 1; i++) {
 
         var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
         console.log(`Connecting to ${url}`)
@@ -121,7 +127,7 @@ function createPath(manga, volume) {
 
         // this is the first page, we have to compute the number of pages
         // TODO we change the loop iteration in the loop, this is DIRTY!
-        if (i === 1) {
+        if (i === startPage) {
             let foundNode = await page.$(config.maxPageSelector)
             let nodeLength = await foundNode.evaluate(node => node.length)
             let nodeValue = await foundNode.evaluate(node => node.innerText)
