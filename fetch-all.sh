@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {1..13}
+for i in {3..3}
 do
-  yarn start --manga bonne-nuit-punpun --number volume-$i
+  yarn start --manga dragon-ball --number $i --maxpages 40
 done

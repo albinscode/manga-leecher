@@ -22,10 +22,12 @@ program
     .requiredOption('-m, --manga <a>', 'the manga name to download')
     .requiredOption('-n, --number <a>', 'the manga volume number to download')
     .option('-r, --resume <a>', 'the number of the page to resume')
+    .option('-p, --maxpages <a>', 'the number of pages to fetch if we cannot determine it from html dom')
 program.parse(process.argv);
 
 let manga = program.manga
 let volume = program.number
+let maxPages = program.maxpages
 
 function injectVariables(pattern, manga, volume, pagePattern, pageNumber) {
     pattern = pattern.replace('${manga}', manga)
@@ -129,19 +131,26 @@ function createPath(manga, volume) {
             // this is the first page, we have to compute the number of pages
             // TODO we change the loop iteration in the loop, this is DIRTY!
             if (i === startPage) {
-                let foundNode = await page.$(config.maxPageSelector)
-                let nodeLength = await foundNode.evaluate(node => node.length)
-                let nodeValue = await foundNode.evaluate(node => node.innerText)
-
-                if (nodeLength === 0) {
-                    throw Error('Cannot find number of pages!')
+                // max pages provided by command
+                if (maxPages) {
+                    pages = maxPages;
                 }
-                // we take the text if we have only one node
-                if (nodeLength === 1) {
-                    pages = nodeValue
-                }
+                // max pages provided from a dom value
                 else {
-                    pages = nodeLength
+                    let foundNode = await page.$(config.maxPageSelector)
+                    let nodeLength = await foundNode.evaluate(node => node.length)
+                    let nodeValue = await foundNode.evaluate(node => node.innerText)
+
+                    if (nodeLength === 0) {
+                        throw Error('Cannot find number of pages!')
+                    }
+                    // we take the text if we have only one node
+                    if (nodeLength === 1) {
+                        pages = nodeValue
+                    }
+                    else {
+                        pages = nodeLength
+                    }
                 }
                 console.log(`There are ${pages} to fetch.`)
             }

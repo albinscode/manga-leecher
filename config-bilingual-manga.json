@@ -1,0 +1,33 @@
+{
+    "pagePattern": "${pageNumber}",
+    "filePattern": "${manga}_${volume}_${pageNumber}.png",
+    "urlPattern": "https://bilingualmanga.com/manga/${manga}/chapter-${volume}/1-${pagePattern}",
+    "timeout": 30000,
+    "mode": "dom",
+    "blacklist": [
+        "syndicate",
+        "adtrue",
+        "ie8eamus",
+        "passeura",
+        "google"
+    ],
+    "maxPageSelector": "",
+    "dom": {
+        "selector": ".image-container",
+        "padding": 0
+    },
+    "screenshot": {
+        "coords": {
+            "x": 200,
+            "y": 300,
+            "width": 1170,
+            "height": 840
+        }
+    },
+    "debug": false,
+    "viewPort": {
+        "width": 3200,
+        "height": 2400,
+        "deviceScaleFactor": 1
+    }
+}
