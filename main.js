@@ -164,7 +164,7 @@ function createPath(manga, volume) {
             if (config.mode === 'snapshot') {
                 await page.screenshot({
                     path: fileToWrite,
-                    clip: config.snapshot.coords,
+                    clip: config.screenshot.coords,
                 });
             }
             // no working well as far as we need to click to have node selectable
@@ -176,6 +176,16 @@ function createPath(manga, volume) {
                     selector: config.dom.selector,
                     padding: config.dom.padding
                 }, page)
+            }
+            // we simply download the whole html
+            else if (config.mode === 'download') {
+                let bodyHtml = await page.content()
+
+                fs.writeFile(fileToWrite, bodyHtml, err => {
+                    if(err) {
+                        throw new Error(`Cannot download file ${page.url()}` + err)
+                    }
+                })
             }
             console.log(`File ${fileToWrite} written`)
         }

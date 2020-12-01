@@ -1,0 +1,33 @@
+{
+    "pagePattern": "p${pageNumber}.svgz",
+    "filePattern": "${manga}_${pageNumber}.svgz",
+    "urlPattern": "https://p.calameoassets.com/200317171930-49c5a61624a423f34d94cc1cac6a108f/${pagePattern}",
+    "timeout": 3000,
+    "mode": "download",
+    "blacklist": [
+        "syndicate",
+        "adtrue",
+        "ie8eamus",
+        "passeura",
+        "google"
+    ],
+    "maxPageSelector": "#pages",
+    "dom": {
+        "selector": "image",
+        "padding": 0
+    },
+    "screenshot": {
+        "coords": {
+            "x": 200,
+            "y": 300,
+            "width": 1170,
+            "height": 840
+        }
+    },
+    "debug": false,
+    "viewPort": {
+        "width": 3200,
+        "height": 2400,
+        "deviceScaleFactor": 1
+    }
+}
