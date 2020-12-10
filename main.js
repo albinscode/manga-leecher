@@ -12,7 +12,6 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin())
 
 const fs = require('fs')
-const config = require('./config.json')
 
 const { program } = require('commander')
 program.version('0.0.1')
@@ -23,11 +22,15 @@ program
     .requiredOption('-n, --number <a>', 'the manga volume number to download')
     .option('-r, --resume <a>', 'the number of the page to resume')
     .option('-p, --maxpages <a>', 'the number of pages to fetch if we cannot determine it from html dom')
+    .option('-c, --config <config>', 'config file to use if differente from config.json by default')
 program.parse(process.argv);
 
 let manga = program.manga
 let volume = program.number
 let maxPages = program.maxpages
+const config = program.config ? require(`./${program.config}`) : require('./config.json')
+
+    console.log(program.config)
 
 function injectVariables(pattern, manga, volume, pagePattern, pageNumber) {
     pattern = pattern.replace('${manga}', manga)
@@ -179,7 +182,21 @@ function createPath(manga, volume) {
             }
             // we simply download the whole html
             else if (config.mode === 'download') {
-                let bodyHtml = await page.content()
+                let bodyHtml = null
+                // we want to filter html content
+                if (config.dom.selector) {
+                    const element = await page.waitForSelector(config.dom.selector)
+                    bodyHtml = await page.evaluate(element => element.innerHTML, element);
+                }
+                // we fetch the whole page
+                else {
+                    bodyHtml = await page.content()
+                }
+
+                if (config.addChapterSection) {
+                    const chapter =  injectVariables(config.addChapterSection, manga, volume, config.pagePattern, i)
+                    bodyHtml = chapter + bodyHtml
+                }
 
                 fs.writeFile(fileToWrite, bodyHtml, err => {
                     if(err) {

@@ -5,16 +5,10 @@
     "timeout": 3000,
     "mode": "download",
     "blacklist": [
-        "syndicate",
-        "adtrue",
-        "ie8eamus",
-        "passeura",
         "google"
     ],
     "maxPageSelector": "#pages",
     "dom": {
-        "selector": "image",
-        "padding": 0
     },
     "screenshot": {
         "coords": {
