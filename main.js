@@ -30,8 +30,6 @@ let volume = program.number
 let maxPages = program.maxpages
 const config = program.config ? require(`./${program.config}`) : require('./config.json')
 
-    console.log(program.config)
-
 function injectVariables(pattern, manga, volume, pagePattern, pageNumber) {
     pattern = pattern.replace('${manga}', manga)
     pattern = pattern.replace('${volume}', volume)
