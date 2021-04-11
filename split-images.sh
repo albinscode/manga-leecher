@@ -5,6 +5,9 @@
 
 # You can adjust these settings to suit your needs
 
+# for manga
+INVERSE_PAGE=1
+
 INPUT_FOLDER=$1 # set input folder name
 OUTPUT_FOLDER=$1 # set output folder name
 # mkdir $OUTPUT_FOLDER   # create the folder to store split images
@@ -15,6 +18,8 @@ OUTPUT='png'    # set extension of image type to save
 # You shouldn't need to adjust anything below here
 
 COUNTER=1       # set counter to zero
+
+mkdir -p ${INPUT_FOLDER}/original
 
 for ITEM in ${INPUT_FOLDER}/*.$INPUT        # get items in present folder
 
@@ -32,10 +37,25 @@ do                          # start loop
     LEFT=${OUTPUT_FOLDER}'/'${FORMAT}.$OUTPUT           # filename of left half
     COUNTER=$((COUNTER+1))  # increment counter
 
+    # we do not have to resize
+    if [ $H -gt $W ]; then
+        cp $ITEM $LEFT
+        # we keep still the original
+        mv ${ITEM} ${OUTPUT_FOLDER}/original
+        continue
+    fi
+
     printf -v FORMAT "%03d" ${COUNTER}
     RIGHT=${OUTPUT_FOLDER}'/'${FORMAT}.$OUTPUT          # filename of right half
 
-    echo ${LEFT}
+
+    # we reverse page
+    if [ ${INVERSE_PAGE} == 1 ]; then
+        ITEM_TMP=$LEFT
+        LEFT=$RIGHT
+        RIGHT=$ITEM_TMP
+    fi;
+
 
     convert -verbose -crop ${NEWW}x${H} $ITEM $LEFT         # make left half
     convert -verbose -crop ${W}x${H}+${NEWW}-0 +repage $ITEM $RIGHT # make right half
@@ -51,6 +71,8 @@ do                          # start loop
 
     # convert -verbose -crop ${W}x${NEWH} $ITEM $TOP           # make top half
     # convert -verbose -crop ${W}x${H}+0+${NEWH} $ITEM $BOTTOM # make bottom half
+
+    mv ${ITEM} ${OUTPUT_FOLDER}/original
 
     COUNTER=$((COUNTER+1))  # increment counter
 done                        # end loop
