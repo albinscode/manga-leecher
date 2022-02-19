@@ -4,8 +4,13 @@
     "urlPattern": "https://www.japscan.se/lecture-en-ligne/${manga}/${volume}/${pagePattern}.html",
     "timeout": 30000,
     "mode": "dom",
+    "whitelist": [
+        "japscan",
+        "cloudflare"
+    ],
     "blacklist": [
         "syndicate",
+        "eu.criteo",
         "adtrue",
         "ie8eamus",
         "passeura",
@@ -24,7 +29,7 @@
             "height": 840
         }
     },
-    "debug": false,
+    "debug": true,
     "viewPort": {
         "width": 3200,
         "height": 2400,

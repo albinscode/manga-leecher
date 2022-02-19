@@ -1,11 +1,16 @@
 {
     "pagePattern": "${pageNumber}",
     "filePattern": "${manga}_${volume}_${pageNumber}.png",
-    "urlPattern": "https://www.japscan.co/lecture-en-ligne/${manga}/${volume}/${pagePattern}.html",
+    "urlPattern": "https://www.japscan.se/lecture-en-ligne/${manga}/${volume}/${pagePattern}.html",
     "timeout": 30000,
     "mode": "dom",
+    "whitelist": [
+        "japscan",
+        "cloudflare"
+    ],
     "blacklist": [
         "syndicate",
+        "eu.criteo",
         "adtrue",
         "ie8eamus",
         "passeura",
@@ -24,10 +29,11 @@
             "height": 840
         }
     },
-    "debug": false,
+    "debug": true,
     "viewPort": {
         "width": 3200,
         "height": 2400,
         "deviceScaleFactor": 1
     }
 }
+

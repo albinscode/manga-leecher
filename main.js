@@ -104,7 +104,8 @@ function createPath(manga, volume) {
     page.on('request', interceptedRequest => {
 
         var foundUrl = interceptedRequest.url()
-        if (foundUrl.match(config.blacklist.join('|'))) {
+        if (foundUrl.match(config.blacklist.join('|')) ||
+            (config.whitelist.length > 0 && !foundUrl.match(config.whitelist.join('|')) ) ) {
             // we reject the useless ads!
             if (config.debug) {
                 console.log(`we reject ad: ${foundUrl}`)
@@ -134,10 +135,11 @@ function createPath(manga, volume) {
             if (i === startPage) {
                 // max pages provided by command
                 if (maxPages) {
-                    pages = maxPages;
+                    pages = parseInt(maxPages);
                 }
                 // max pages provided from a dom value
                 else {
+                    if (!config.maxPageSelector) throw Error('maxPageSelector shall be specified or maxpages')
                     let foundNode = await page.$(config.maxPageSelector)
                     let nodeLength = await foundNode.evaluate(node => node.length)
                     let nodeValue = await foundNode.evaluate(node => node.innerText)
@@ -203,6 +205,11 @@ function createPath(manga, volume) {
                 })
             }
             console.log(`File ${fileToWrite} written`)
+
+            // if (maxPages && i == maxPages) {
+            //     console.log('break')
+            //     break;
+            // }
         }
         catch (error) {
             console.log(error)
