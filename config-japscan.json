@@ -6,6 +6,7 @@
     "mode": "dom",
     "whitelist": [
         "japscan",
+        "jquery",
         "cloudflare"
     ],
     "blacklist": [
@@ -18,7 +19,7 @@
     ],
     "maxPageSelector": "#pages",
     "dom": {
-        "selector": "cnv-vv",
+        "selector": "#single-reader",
         "padding": 0
     },
     "screenshot": {
@@ -29,11 +30,10 @@
             "height": 840
         }
     },
-    "debug": true,
+    "debug": false,
     "viewPort": {
         "width": 3200,
         "height": 2400,
         "deviceScaleFactor": 1
     }
 }
-
