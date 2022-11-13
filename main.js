@@ -104,7 +104,7 @@ function createPath(manga, volume) {
     page.on('request', interceptedRequest => {
 
         var foundUrl = interceptedRequest.url()
-        if (foundUrl.match(config.blacklist.join('|')) ||
+        if ((config.blacklist.length > 0 && foundUrl.match(config.blacklist.join('|'))) ||
             (config.whitelist.length > 0 && !foundUrl.match(config.whitelist.join('|')) ) ) {
             // we reject the useless ads!
             if (config.debug) {
