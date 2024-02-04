@@ -4,12 +4,12 @@
 // TODO create pdf
 
 
-// const puppeteer = require('puppeteer');
-const puppeteer = require('puppeteer-extra')
+const puppeteer = require('puppeteer');
+// const puppeteer = require('puppeteer-extra')
 
 // add stealth plugin and use defaults (all evasion techniques)
-const StealthPlugin = require('puppeteer-extra-plugin-stealth')
-puppeteer.use(StealthPlugin())
+// const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+// puppeteer.use(StealthPlugin())
 
 const fs = require('fs')
 
@@ -54,8 +54,22 @@ function createPath(manga, volume) {
 
     const browser = await puppeteer.launch({
         headless: !config.debug,
-        devtools: config.debug,
+        // dumpio: true,
+        devtools: true,
     });
+
+
+    /*
+    const page2 = await browser.newPage()
+    await page2.goto('https://stackoverflow.com')
+    let selector = await page2.waitForSelector('div.topbar-dialog')
+    let selectorLength = await page2.evaluate(() => $('div.topbar-dialog').length)
+    console.log(selectorLength)
+    console.log(await selector.evaluate(s => s.length))
+    console.log(selector.length)
+
+    process.exit(0)
+    */
 
      /**
      * Takes a screenshot of a DOM element on the page, with optional padding.
@@ -100,6 +114,8 @@ function createPath(manga, volume) {
     const page = await browser.newPage()
     page.setViewport(config.viewPort)
 
+    let headersForFetch = null;
+
     page.setRequestInterception(true)
     page.on('request', interceptedRequest => {
 
@@ -113,6 +129,12 @@ function createPath(manga, volume) {
             interceptedRequest.abort()
         }
         else {
+            console.log(`we let pass: ${foundUrl}`)
+            // console.log(interceptedRequest.headers())
+            if (foundUrl.indexOf('1.jpg') != -1) {
+                headersForFetch = interceptedRequest.headers()
+                console.log(headersForFetch)
+            }
             interceptedRequest.continue()
         }
     })
@@ -127,8 +149,19 @@ function createPath(manga, volume) {
 
         try {
             var url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
+
+            // https://pixeljets.com/blog/puppeteer-click-get-xhr-response/
+            // we use only one page and then run ajax requests like an SPA
+            if (config.urlPatternOnlyOnePage) {
+                url =  injectVariables(config.urlPatternOnlyOnePage, manga, volume, config.pagePattern, i)
+            }
             console.log(`Connecting to ${url}`)
-            await page.goto(url, { waitUntil: 'networkidle2', timeout: config.timeout })
+            if ((config.urlPatternOnlyOnePage && i == startPage) || !config.urlPatternOnlyOnePage) {
+                await page.goto(url, { waitUntil: 'networkidle2', timeout: config.timeout })
+            }
+
+            // let contentPage = await page.content()
+            // console.log(contentPage)
 
             // this is the first page, we have to compute the number of pages
             // TODO we change the loop iteration in the loop, this is DIRTY!
@@ -140,9 +173,12 @@ function createPath(manga, volume) {
                 // max pages provided from a dom value
                 else {
                     if (!config.maxPageSelector) throw Error('maxPageSelector shall be specified or maxpages')
+
                     let foundNode = await page.$(config.maxPageSelector)
                     let nodeLength = await foundNode.evaluate(node => node.length)
                     let nodeValue = await foundNode.evaluate(node => node.innerText)
+
+                    // console.log(`Nb of pages ${nodeLength} ${nodeValue}`)
 
                     if (nodeLength === 0) {
                         throw Error('Cannot find number of pages!')
@@ -156,6 +192,16 @@ function createPath(manga, volume) {
                     }
                 }
                 console.log(`There are ${pages} to fetch.`)
+            }
+
+
+            // we will use the dom selector that must point to an image
+            // to display the new image loaded directly via url
+            if (config.urlPatternOnlyOnePage) {
+                url =  injectVariables(config.urlPattern, manga, volume, config.pagePattern, i)
+                let imgSelector = await page.waitForSelector(config.dom.selector)
+                await page.evaluate( (img,url) => { img.src = url }, imgSelector, url)
+                await new Promise(r => setTimeout(r, config.waitDelay))
             }
 
             // to have a good sort we add leading zeros
@@ -214,6 +260,7 @@ function createPath(manga, volume) {
         catch (error) {
             console.log(error)
             console.log('Trying to resume from error')
+            await page.waitForSelector('#biroute')
             i--;
         }
 
